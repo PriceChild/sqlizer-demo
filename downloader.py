@@ -4,6 +4,7 @@ import logging
 import argparse
 import sys
 import requests
+import MySQLdb as dbapi2
 
 from os import environ
 from os.path import basename
@@ -102,9 +103,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Insert Land Registry Data into MySQL')
     parser.add_argument('-u', '--url', help='URL to fetch data from')
     parser.add_argument('-f', '--filename', help='file to copy data from')
-    parser.add_argument('-o', '--output', help='optional location to save sqlizer output')
+    parser.add_argument('-o', '--output', required=True, help='location to save sqlizer output. This should be reviewed before insertion into MySQL')
     parser.add_argument('-k', '--api-key', help='Sqlizer API key. Preferably set using SQLIZER_API_KEY environment variable',
                         default=environ.get('SQLIZER_API_KEY'))
+    mysql_group = parser.add_argument_group('MySQL Connection Options')
+    mysql_group.add_argument('-H', '--mysql-host')
+    mysql_group.add_argument('-U', '--mysql-user')
+    mysql_group.add_argument('-P', '--mysql-pass', help='Preferably set using SQLIZER_MYSQL_PASSWORD',
+                             default=environ.get('SQLIZER_MYSQL_PASSWORD'))
+    mysql_group.add_argument('-D', '--mysql-db')
     args = parser.parse_args()
 
     if not args.api_key:
@@ -129,9 +136,20 @@ if __name__ == "__main__":
     api = SqlizerApi(args.api_key)
     r = api.convert(file_name, content)
 
-    if args.output:
-        with open(args.output, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=128):
-                f.write(chunk)
-    else:
-        print(r.text)
+    with open(args.output, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=128):
+            f.write(chunk)
+    if args.mysql_host:
+        while True:
+            response = input("Please check %s and enter Y to commit." % args.output)
+            if response == "Y":
+                break
+            if response.lower() == "n":
+                sys.exit(2)
+
+        db = dbapi2.connect(host=args.mysql_host,
+                            database=args.mysql_db,
+                            user=args.mysql_user,
+                            password=args.mysql_pass)
+        with db.cursor() as c:
+            c.execute(r.text)
