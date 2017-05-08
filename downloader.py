@@ -5,6 +5,7 @@ import argparse
 import sys
 import requests
 
+from os import environ
 from os.path import basename
 from time import sleep
 
@@ -102,9 +103,12 @@ if __name__ == "__main__":
     parser.add_argument('-u', '--url', help='URL to fetch data from')
     parser.add_argument('-f', '--filename', help='file to copy data from')
     parser.add_argument('-o', '--output', help='optional location to save sqlizer output')
+    parser.add_argument('-k', '--api-key', help='Sqlizer API key. Preferably set using SQLIZER_API_KEY environment variable',
+                        default=environ.get('SQLIZER_API_KEY'))
     args = parser.parse_args()
 
-    sqlizer_api_key = ''
+    if not args.api_key:
+        raise RuntimeError("Please set SQLIZER_API_KEY environment variable")
 
     if (args.url and args.filename) or (not args.url and not args.filename):
         print("Please specify one of --filename or --url")
@@ -122,7 +126,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    api = SqlizerApi(sqlizer_api_key)
+    api = SqlizerApi(args.api_key)
     r = api.convert(file_name, content)
 
     if args.output:
