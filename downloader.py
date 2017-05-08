@@ -15,8 +15,7 @@ class SqlizerApi(object):
     def __init__(self, apikey):
         self.apikey = apikey
         self.sqlizer_headers = {'Authorization': 'Bearer %s' % self.apikey}
-        self.maxsizebytes = 10000000
-        self.uploads = {}
+        self.maxsizebytes = 10000000  # mandated by Sqlizer
 
     def step1(self, file_name):
         r = requests.post('https://sqlizer.io/api/files/',
@@ -30,17 +29,15 @@ class SqlizerApi(object):
                           )
         r.raise_for_status()
         upload_id = r.json()['ID']
-        self.uploads[upload_id] = 0
         return upload_id
 
     def really_upload(self, upload_id, content, part_number=1):
-        self.uploads[upload_id] += 1
-        logging.info("Uploading Part %i" % self.uploads[upload_id])
+        logging.info("Uploading Part %i" % part_number)
         r = requests.post('https://sqlizer.io/api/files/%s/data/' % upload_id,
                           headers=self.sqlizer_headers,
                           data={'file': content,
-                                'PartNumber': self.uploads[upload_id]})
-        logging.info("Completed Part %i" % self.uploads[upload_id])
+                                'PartNumber': part_number})
+        logging.info("Completed Part %i" % part_number)
         r.raise_for_status()
 
     def finalize(self, upload_id):
