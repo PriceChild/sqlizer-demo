@@ -13,12 +13,23 @@ import requests
 
 
 class SqlizerApi(object):
+    """Example Sqlizer API Client
+
+    Example usage:
+        api = SqlizerApi(api_key)
+        r = api.convert(file_name, content)
+
+    Returns a requests request object.
+    """
     def __init__(self, apikey):
         self.apikey = apikey
         self.sqlizer_headers = {'Authorization': 'Bearer %s' % self.apikey}
         self.maxsizebytes = 10000000  # mandated by Sqlizer
 
     def step1(self, file_name):
+        """Initialise upload
+        
+           upload_id returned is used for further requests. """
         r = requests.post('https://sqlizer.io/api/files/',
                           headers=self.sqlizer_headers,
                           data={'DatabaseType': 'MySQL',
@@ -49,6 +60,7 @@ class SqlizerApi(object):
         r.raise_for_status()
 
     def step2(self, upload_id, content):
+        """Chunks content into <maxsizebytes (10mb) for upload"""
         step = 0
         part_number = 1
         while step < len(content):
@@ -60,6 +72,9 @@ class SqlizerApi(object):
         self.finalize(upload_id)
 
     def upload(self, file_name, content):
+        """Completes upload of content.
+
+        Does not wait for or return API's response."""
         upload_id = self.step1(file_name)
         logging.info("Sqlizer upload ID: %s" % upload_id)
         self.step2(upload_id, content)
@@ -92,6 +107,7 @@ class SqlizerApi(object):
         return r
 
     def convert(self, file_name, content):
+        """The main method. Uploads, waits & returns the response."""
         upload_id = api.upload(file_name, content)
         result_url = api.wait_for_processing(upload_id)
         return self.get_result(result_url)
