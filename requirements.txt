@@ -1,2 +1,1 @@
 requests>=2
-mysqlclient>=1.3

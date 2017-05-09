@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
+import subprocess
 import logging
 import argparse
 import sys
-import requests
-import MySQLdb as dbapi2
 
 from os import environ
 from os.path import basename
 from time import sleep
+
+import requests
 
 
 class SqlizerApi(object):
@@ -136,7 +137,7 @@ if __name__ == "__main__":
     with open(args.output, 'wb') as f:
         for chunk in r.iter_content(chunk_size=128):
             f.write(chunk)
-    if args.mysql_host:
+    if args.mysql_db:
         while True:
             response = input("Please check %s and enter Y to commit." % args.output)
             if response == "Y":
@@ -144,9 +145,21 @@ if __name__ == "__main__":
             if response.lower() == "n":
                 sys.exit(2)
 
-        db = dbapi2.connect(host=args.mysql_host,
-                            database=args.mysql_db,
-                            user=args.mysql_user,
-                            password=args.mysql_pass)
-        with db.cursor() as c:
-            c.execute(r.text)
+        # We're going to use the mysql binary here so that we can pipe a file
+        # to it. 
+        # For small sql files we could use a python module but then we'd have
+        # split it up into statements to keep it below the maximum statement
+        # size.
+        command = "mysql %s" % args.mysql_db
+        if args.mysql_host:
+            command += " --host=%s " % args.mysql_host
+        if args.mysql_user:  # user/pass may be taken from ~/.my.cnf
+            command += " --user=%s " % args.mysql_user
+        if args.mysql_pass:
+            command += " --password=%s " % args.mysql_pass
+        command += " < %s" % args.output
+        result = subprocess.call(command, shell=True)
+        if result:
+            logging.info("Success")
+        else:
+            logging.error("mysql insertion failed.")
