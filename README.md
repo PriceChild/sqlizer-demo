@@ -56,3 +56,7 @@ This tool uses the mysql client binary directly. Setting a username/password in 
 * Save files to temporary locations by default.
 * Supply header row on command line.
 * Read options from [config file](https://docs.python.org/3.5/library/configparser.html) in addition to command line.
+* Separate SqlizerAPI class into it's own module for reuse.
+* Sanity checks around user input. subprocess(shell=True) allows for nastiness but should be limited to the user, not the sql script retrieved.
+  * Currently prompt the user to check the sql script... believe it's possible for a malicious server to escape the mysql client? Confirm?
+* Tests!
