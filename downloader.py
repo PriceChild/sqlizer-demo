@@ -11,6 +11,8 @@ from time import sleep
 
 import requests
 
+logger = logging.getLogger(__name__)
+
 
 class SqlizerApi(object):
     """Example Sqlizer API Client
@@ -44,16 +46,16 @@ class SqlizerApi(object):
         return upload_id
 
     def really_upload(self, upload_id, content, part_number=1):
-        logging.info("Uploading Part %i" % part_number)
+        logger.info("Uploading Part %i" % part_number)
         r = requests.post('https://sqlizer.io/api/files/%s/data/' % upload_id,
                           headers=self.sqlizer_headers,
                           data={'file': content,
                                 'PartNumber': part_number})
-        logging.info("Completed Part %i" % part_number)
+        logger.info("Completed Part %i" % part_number)
         r.raise_for_status()
 
     def finalize(self, upload_id):
-        logging.info("Finalising upload")
+        logger.info("Finalising upload")
         r = requests.put('https://sqlizer.io/api/files/%s/' % upload_id,
                          headers=self.sqlizer_headers,
                          data={'Status': 'Uploaded'})
@@ -76,7 +78,7 @@ class SqlizerApi(object):
 
         Does not wait for or return API's response."""
         upload_id = self.step1(file_name)
-        logging.info("Sqlizer upload ID: %s" % upload_id)
+        logger.info("Sqlizer upload ID: %s" % upload_id)
         self.step2(upload_id, content)
         return upload_id
 
@@ -91,13 +93,13 @@ class SqlizerApi(object):
             response = self.get_status(upload_id)
             status = response['Status']
             if status == "Complete":
-                logging.info("Conversion Completed")
+                logger.info("Conversion Completed")
                 return response['ResultUrl']
             elif status == "Failed":
-                logging.error("Conversion Failed")
+                logger.error("Conversion Failed")
                 raise RuntimeError("Conversion Failed")
             else:
-                logging.debug("Status: %s" % status)
+                logger.debug("Status: %s" % status)
                 sleep(5)
 
     def get_result(self, result_url):
@@ -128,6 +130,8 @@ if __name__ == "__main__":
     mysql_group.add_argument('-D', '--mysql-db')
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.INFO)
+
     if not args.api_key:
         raise RuntimeError("Please set SQLIZER_API_KEY environment variable")
 
@@ -136,6 +140,7 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     elif args.url:
+        logging.info("Fetching %s" % args.url)
         r = requests.get(args.url)
         r.raise_for_status()
         content = r.text
@@ -144,8 +149,6 @@ if __name__ == "__main__":
         with open(args.filename) as f:
             content = f.read()
         file_name = basename(args.filename)
-
-    logging.basicConfig(level=logging.DEBUG)
 
     api = SqlizerApi(args.api_key)
     r = api.convert(file_name, content)
