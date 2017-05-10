@@ -61,3 +61,4 @@ This tool uses the mysql client binary directly. Setting a username/password in 
 * Sanity checks around user input. subprocess(shell=True) allows for nastiness but should be limited to the user, not the sql script retrieved.
   * Currently prompt the user to check the sql script... believe it's possible for a malicious server to escape the mysql client? Confirm?
 * Tests!
+* Specify table_name on the command line.
