@@ -2,6 +2,7 @@
 
 Basic features:
 
+* Python 2 & 3 Support.
 * Fetches data via http(s) or pushes local files.
 * Submits data to Sqlizer api.
   * Chunks data in \<10mb submissions.

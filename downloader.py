@@ -8,6 +8,7 @@ import sys
 from os import environ
 from os.path import basename
 from time import sleep
+from builtins import input
 
 import requests
 
